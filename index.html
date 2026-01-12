@@ -266,6 +266,23 @@
             border-radius: 8px;
             margin-bottom: 10px;
             border-left: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-remove {
+            background: #dc3545;
+            color: white;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .btn-remove:hover {
+            background: #c82333;
         }
     </style>
 </head>
@@ -353,8 +370,13 @@
                     <input type="text" id="newUsername" readonly style="background: #f8f9fa;">
                 </div>
                 <div class="form-group">
+                    <label>Company</label>
+                    <input type="text" id="newCompany" placeholder="Company name">
+                </div>
+                <div class="form-group">
                     <label>Password</label>
-                    <input type="password" id="newPassword" placeholder="Initial password">
+                    <input type="password" id="newPassword" value="Naked26$" readonly style="background: #f8f9fa;">
+                    <small style="color: #6c757d;">Auto-generated password: Naked26$</small>
                 </div>
                 <div class="form-group">
                     <label>Manager</label>
@@ -402,11 +424,12 @@
                             <th>Work Type</th>
                             <th>IP</th>
                             <th>Location</th>
+                            <th>Geolocation</th>
                             <th>Duration</th>
                         </tr>
                     </thead>
                     <tbody id="allLogs">
-                        <tr><td colspan="7" style="text-align: center; padding: 30px; color: #6c757d;">No logs yet</td></tr>
+                        <tr><td colspan="8" style="text-align: center; padding: 30px; color: #6c757d;">No logs yet</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -424,8 +447,8 @@
 
         // Data
         let users = [
-            {id: 1, name: 'Admin User', username: 'admin', password: 'admin123', role: 'admin', manager: 'N/A', workType: 'office'},
-            {id: 2, name: 'John Doe', username: 'john', password: 'pass123', role: 'employee', manager: 'Admin User', workType: 'hybrid'}
+            {id: 1, name: 'Admin User', username: 'admin', password: 'admin123', role: 'admin', manager: 'N/A', workType: 'office', company: 'N/A'},
+            {id: 2, name: 'John Doe', username: 'john', password: 'pass123', role: 'employee', manager: 'Admin User', workType: 'hybrid', company: 'ABC Corp'}
         ];
         
         let logs = [];
@@ -530,17 +553,30 @@
             }
         }
 
-        // Get location
+        // Get location and geolocation
         async function getLocation() {
             try {
                 const res = await fetch('https://ipapi.co/json/');
                 const data = await res.json();
+                
+                // Get geolocation coordinates
+                let geoCoords = 'Not available';
+                try {
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject);
+                    });
+                    geoCoords = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+                } catch (e) {
+                    console.log('Geolocation not available');
+                }
+                
                 return {
                     ip: data.ip,
-                    location: data.city + ', ' + data.region + ', ' + data.country_name
+                    location: data.city + ', ' + data.region + ', ' + data.country_name,
+                    geolocation: geoCoords
                 };
             } catch (e) {
-                return {ip: 'Unknown', location: 'Unknown'};
+                return {ip: 'Unknown', location: 'Unknown', geolocation: 'Not available'};
             }
         }
 
@@ -566,6 +602,7 @@
                 workType: currentUser.workType,
                 ip: loc.ip,
                 location: loc.location,
+                geolocation: loc.geolocation,
                 duration: null
             });
 
@@ -599,6 +636,7 @@
                 workType: currentUser.workType,
                 ip: loc.ip,
                 location: loc.location,
+                geolocation: loc.geolocation,
                 duration: duration
             });
 
@@ -670,12 +708,13 @@
         function addEmployee() {
             const name = document.getElementById('newName').value.trim();
             const username = document.getElementById('newUsername').value.trim();
-            const password = document.getElementById('newPassword').value;
+            const password = 'Naked26$';
+            const company = document.getElementById('newCompany').value.trim();
             const manager = document.getElementById('newManager').value.trim();
             const workType = document.getElementById('newWorkType').value;
 
-            if (!name || !username || !password) {
-                showMsg('adminMsg', 'Please fill all required fields', 'error');
+            if (!name || !username || !company) {
+                showMsg('adminMsg', 'Please fill all required fields (Name, Username, Company)', 'error');
                 return;
             }
 
@@ -690,6 +729,7 @@
                 username,
                 password,
                 role: 'employee',
+                company,
                 manager: manager || 'N/A',
                 workType
             });
@@ -699,10 +739,20 @@
             
             document.getElementById('newName').value = '';
             document.getElementById('newUsername').value = '';
-            document.getElementById('newPassword').value = '';
+            document.getElementById('newCompany').value = '';
             document.getElementById('newManager').value = '';
             
             showMsg('adminMsg', 'Employee added successfully!', 'success');
+        }
+
+        // Remove employee
+        function removeEmployee(userId) {
+            if (confirm('Are you sure you want to remove this employee?')) {
+                users = users.filter(u => u.id !== userId);
+                saveData();
+                renderEmployees();
+                showMsg('adminMsg', 'Employee removed successfully!', 'success');
+            }
         }
 
         // Handle PDF upload for employee import
@@ -744,6 +794,7 @@
                             username: emp.username,
                             password: emp.password,
                             role: 'employee',
+                            company: emp.company || 'N/A',
                             manager: emp.manager || 'N/A',
                             workType: emp.workType || 'office'
                         });
@@ -830,7 +881,7 @@
                 return;
             }
 
-            const headers = ['Employee', 'Action', 'Date', 'Time', 'Work Type', 'IP Address', 'Location', 'Duration'];
+            const headers = ['Employee', 'Action', 'Date', 'Time', 'Work Type', 'IP Address', 'Location', 'Geolocation', 'Duration'];
             const rows = logs.map(log => {
                 const dt = new Date(log.time);
                 return [
@@ -841,6 +892,7 @@
                     log.workType.toUpperCase(),
                     log.ip,
                     log.location,
+                    log.geolocation || 'Not available',
                     log.duration || '-'
                 ];
             });
@@ -887,15 +939,16 @@
                     log.workType.toUpperCase(),
                     log.ip,
                     log.location,
+                    log.geolocation || 'N/A',
                     log.duration || '-'
                 ];
             });
 
             doc.autoTable({
-                head: [['Employee', 'Action', 'Date', 'Time', 'Work Type', 'IP', 'Location', 'Duration']],
+                head: [['Employee', 'Action', 'Date', 'Time', 'Work Type', 'IP', 'Location', 'Geo', 'Duration']],
                 body: tableData,
                 startY: 35,
-                styles: { fontSize: 8 },
+                styles: { fontSize: 7 },
                 headStyles: { fillColor: [102, 126, 234] }
             });
 
@@ -915,11 +968,14 @@
 
             container.innerHTML = emps.map(e => `
                 <div class="employee-card">
-                    <strong>${e.name}</strong><br>
-                    <small style="color: #6c757d;">
-                        Username: ${e.username} | Manager: ${e.manager} | 
-                        <span class="badge badge-${e.workType}">${e.workType.toUpperCase()}</span>
-                    </small>
+                    <div>
+                        <strong>${e.name}</strong><br>
+                        <small style="color: #6c757d;">
+                            Username: ${e.username} | Company: ${e.company || 'N/A'} | Manager: ${e.manager} | 
+                            <span class="badge badge-${e.workType}">${e.workType.toUpperCase()}</span>
+                        </small>
+                    </div>
+                    <button class="btn-remove" onclick="removeEmployee(${e.id})">Remove</button>
                 </div>
             `).join('');
         }
@@ -929,11 +985,11 @@
             const tbody = document.getElementById('allLogs');
 
             if (logs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px; color: #6c757d;">No logs yet</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: #6c757d;">No logs yet</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = logs.reverse().map(l => {
+            tbody.innerHTML = logs.slice().reverse().map(l => {
                 const time = new Date(l.time).toLocaleString();
                 return `<tr>
                     <td><strong>${l.userName}</strong></td>
@@ -942,6 +998,7 @@
                     <td><span class="badge badge-${l.workType}">${l.workType.toUpperCase()}</span></td>
                     <td>${l.ip}</td>
                     <td>${l.location}</td>
+                    <td>${l.geolocation || 'Not available'}</td>
                     <td>${l.duration || '-'}</td>
                 </tr>`;
             }).join('');
