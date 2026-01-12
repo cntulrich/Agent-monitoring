@@ -662,23 +662,31 @@
 
         // Login
         async function login() {
+            console.log('Login attempt started');
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
+
+            console.log('Username:', username);
+            console.log('Available employees:', employees);
 
             const user = employees.find(e => e.username === username && e.password === password);
             
             if (!user) {
                 showMessage('loginMessage', 'Invalid username or password', 'error');
+                console.log('Login failed - no matching user found');
                 return;
             }
 
+            console.log('Login successful for user:', user);
             currentUser = user;
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('logoutBtn').classList.remove('hidden');
 
             if (user.role === 'admin') {
+                console.log('Showing admin section');
                 showAdminSection();
             } else {
+                console.log('Showing employee section');
                 showEmployeeSection();
             }
         }
