@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Clock-In System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .clock-display {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            color: white;
+            font-size: 3rem;
+            font-weight: 300;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+        }
+
+        .login-section {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-clock-in {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-clock-out {
+            background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            text-align: center;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #6c757d;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .employee-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .employee-card h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .employee-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            color: #6c757d;
+            font-size: 0.95rem;
+        }
+
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #f8f9fa;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .records-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .records-table th,
+        .records-table td {
+            padding: 15px;
+            text-align: left;
+        }
+
+        .records-table tbody tr {
+            border-bottom: 1px solid #dee2e6;
+            transition: background 0.2s;
+        }
+
+        .records-table tbody tr:hover {
+            background: #e9ecef;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .badge-in {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-out {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-wfh {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        .badge-office {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .badge-hybrid {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .no-records {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .current-status {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .location-info {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            display: none;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-input-label:hover {
+            border-color: #667eea;
+            background: #e7f1ff;
+        }
+
+        @media (max-width: 768px) {
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .clock-display {
+                font-size: 2rem;
+            }
+
+            .main-card {
+                padding: 20px;
+            }
+
+            .tabs {
+                overflow-x: auto;
+            }
+
+            .tab {
+                white-space: nowrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="logout-btn hidden" id="logoutBtn">Logout</button>
+
+        <div class="header">
+            <h1>⏰ Employee Clock-In System</h1>
+            <p>Track your work hours accurately</p>
+        </div>
+
+        <div class="clock-display" id="currentTime"></div>
+
+        <!-- Login Section -->
+        <div class="main-card" id="loginSection">
+            <div class="login-section">
+                <h2 style="margin-bottom: 30px; text-align: center;">Login</h2>
+                <div id="loginMessage" class="status-message"></div>
+                <div class="form-group">
+                    <label for="loginUsername">Username</label>
+                    <input type="text" id="loginUsername" placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter password">
+                </div>
+                <button class="btn btn-primary" id="loginBtn">Login</button>
+                <p style="margin-top: 20px; text-align: center; color: #6c757d; font-size: 0.9rem;">
+                    Default Admin: admin / admin123<br>
+                    Employee Demo: employee1 / pass123
+                </p>
+            </div>
+        </div>
+
+        <!-- Employee Clock-In Section -->
+        <div class="main-card hidden" id="employeeSection">
+            <div id="employeeMessage" class="status-message"></div>
+            <div id="currentStatus" class="current-status" style="display: none;"></div>
+
+            <div class="form-group">
+                <label>Employee: <strong id="currentEmployeeName"></strong></label>
+                <div class="employee-info" id="currentEmployeeInfo"></div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-clock-in" id="clockInBtn">🟢 Clock In</button>
+                <button class="btn btn-clock-out" id="clockOutBtn">🔴 Clock Out</button>
+            </div>
+
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">My Records Today</h3>
+            <table class="records-table">
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Time</th>
+                        <th>Location</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+                <tbody id="myRecordsBody">
+                    <tr><td colspan="4" class="no-records">No records yet today</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Admin Section -->
+        <div class="main-card hidden" id="adminSection">
+            <div id="adminMessage" class="status-message"></div>
+
+            <div class="tabs">
+                <button class="tab active" data-tab="employees">Manage Employees</button>
+                <button class="tab" data-tab="logs">Audit Logs</button>
+                <button class="tab" data-tab="import">Import Employees</button>
+            </div>
+
+            <!-- Manage Employees Tab -->
+            <div class="tab-content active" id="employees">
+                <h2 style="margin-bottom: 20px;">Add New Employee</h2>
+                <div class="form-group">
+                    <label>Employee Name</label>
+                    <input type="text" id="newEmployeeName" placeholder="Full name">
+                </div>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="newEmployeeUsername" placeholder="Username for login">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="newEmployeePassword" placeholder="Initial password">
+                </div>
+                <div class="form-group">
+                    <label>Manager</label>
+                    <input type="text" id="newEmployeeManager" placeholder="Manager name">
+                </div>
+                <div class="form-group">
+                    <label>Work Location Type</label>
+                    <select id="newEmployeeWorkType">
+                        <option value="office">Office</option>
+                        <option value="wfh">Work From Home</option>
+                        <option value="hybrid">Hybrid</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="addEmployeeBtn">Add Employee</button>
+
+                <h2 style="margin-top: 40px; margin-bottom: 20px;">All Employees</h2>
+                <div id="employeesList"></div>
+            </div>
+
+            <!-- Audit Logs Tab -->
+            <div class="tab-content" id="logs">
+                <h2 style="margin-bottom: 20px;">All Clock-In/Out Logs</h2>
+                <div style="margin-bottom: 20px;">
+                    <label style="margin-right: 10px;">Filter by Employee:</label>
+                    <select id="filterEmployee" style="padding: 10px; border-radius: 8px; border: 2px solid #e0e0e0;">
+                        <option value="">All Employees</option>
+                    </select>
+                </div>
+                <table class="records-table">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Action</th>
+                            <th>Time</th>
+                            <th>Work Type</th>
+                            <th>IP Address</th>
+                            <th>Location</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allLogsBody">
+                        <tr><td colspan="7" class="no-records">No logs available</td></tr>
+                    </tbody>
+                </table>
+                <button class="btn btn-danger" style="margin-top: 20px;" id="clearLogsBtn">Clear All Logs</button>
+            </div>
+
+            <!-- Import Employees Tab -->
+            <div class="tab-content" id="import">
+                <h2 style="margin-bottom: 20px;">Import Employees from PDF</h2>
+                <p style="margin-bottom: 20px; color: #6c757d;">
+                    Upload a PDF containing employee information. The system will extract text and try to parse employee data.
+                    PDF should contain employee records with fields: Name, Username, Password, Manager, Work Type (Office/WFH/Hybrid).
+                </p>
+                <div class="file-input-wrapper">
+                    <input type="file" id="pdfFileInput" accept=".pdf">
+                    <label for="pdfFileInput" class="file-input-label">
+                        📄 Click to select PDF file or drag and drop
+                    </label>
+                </div>
+                <div id="importStatus" style="margin-top: 20px;"></div>
+                <button class="btn btn-primary" style="margin-top: 20px;" id="processPdfBtn">Process PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Configure PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Application State
+        let currentUser = null;
+        let employees = [];
+        let clockRecords = [];
+        let currentClockIn = null;
+
+        // Initialize default data
+        function initializeDefaultData() {
+            const stored = localStorage.getItem('employees');
+            if (!stored) {
+                employees = [
+                    {
+                        id: 1,
+                        name: 'Admin User',
+                        username: 'admin',
+                        password: 'admin123',
+                        role: 'admin',
+                        manager: 'N/A',
+                        workType: 'office'
+                    },
+                    {
+                        id: 2,
+                        name: 'John Doe',
+                        username: 'employee1',
+                        password: 'pass123',
+                        role: 'employee',
+                        manager: 'Admin User',
+                        workType: 'hybrid'
+                    }
+                ];
+                saveData();
+            } else {
+                loadData();
+            }
+        }
+
+        // Load data from storage
+        function loadData() {
+            const storedEmployees = localStorage.getItem('employees');
+            const storedRecords = localStorage.getItem('clockRecords');
+            const storedClockIn = localStorage.getItem('currentClockIn');
+            const lastDate = localStorage.getItem('lastRecordDate');
+            const today = new Date().toDateString();
+
+            if (storedEmployees) employees = JSON.parse(storedEmployees);
+            
+            if (lastDate !== today) {
+                localStorage.removeItem('clockRecords');
+                localStorage.removeItem('currentClockIn');
+                localStorage.setItem('lastRecordDate', today);
+                clockRecords = [];
+                currentClockIn = null;
+            } else {
+                if (storedRecords) clockRecords = JSON.parse(storedRecords);
+                if (storedClockIn) currentClockIn = JSON.parse(storedClockIn);
+            }
+        }
+
+        // Save data to storage
+        function saveData() {
+            localStorage.setItem('employees', JSON.stringify(employees));
+            localStorage.setItem('clockRecords', JSON.stringify(clockRecords));
+            if (currentClockIn) {
+                localStorage.setItem('currentClockIn', JSON.stringify(currentClockIn));
+            } else {
+                localStorage.removeItem('currentClockIn');
+            }
+        }
+
+        // Update current time display
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+            const dateString = now.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            document.getElementById('currentTime').innerHTML = `
+                <div style="font-size: 3rem; font-weight: 300;">${timeString}</div>
+                <div style="font-size: 1.2rem; margin-top: 10px; opacity: 0.9;">${dateString}</div>
+            `;
+        }
+
+        // Get user's IP and location
+        async function getLocationData() {
+            try {
+                const response = await fetch('https://ipapi.co/json/');
+                const data = await response.json();
+                return {
+                    ip: data.ip,
+                    city: data.city,
+                    region: data.region,
+                    country: data.country_name
+                };
+            } catch (error) {
+                console.error('Location error:', error);
+                return {
+                    ip: 'Unknown',
+                    city: 'Unknown',
+                    region: 'Unknown',
+                    country: 'Unknown'
+                };
+            }
+        }
+
+        // Show message
+        function showMessage(elementId, message, type = 'success') {
+            const msgEl = document.getElementById(elementId);
+            msgEl.textContent = message;
+            msgEl.className = `status-message ${type}`;
+            setTimeout(() => {
+                msgEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // Login
+        async function login() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            const user = employees.find(e => e.username === username && e.password === password);
+            
+            if (!user) {
+                showMessage('loginMessage', 'Invalid username or password', 'error');
+                return;
+            }
+
+            currentUser = user;
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('logoutBtn').classList.remove('hidden');
+
+            if (user.role === 'admin') {
+                showAdminSection();
+            } else {
+                showEmployeeSection();
+            }
+        }
+
+        // Logout
+        function logout() {
+            currentUser = null;
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('employeeSection').classList.add('hidden');
+            document.getElementById('adminSection').classList.add('hidden');
+            document.getElementById('logoutBtn').classList.add('hidden');
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+        }
+
+        // Show employee section
+        function showEmployeeSection() {
+            document.getElementById('employeeSection').classList.remove('hidden');
+            document.getElementById('currentEmployeeName').textContent = currentUser.name;
+            
+            const employee = employees.find(e => e.id === currentUser.id);
+            document.getElementById('currentEmployeeInfo').innerHTML = `
+                <div><strong>Manager:</strong> ${employee.manager}</div>
+                <div><strong>Work Type:</strong> <span class="badge badge-${employee.workType}">${employee.workType.toUpperCase()}</span></div>
+            `;
+
+            updateCurrentStatus();
+            renderMyRecords();
+        }
+
+        // Show admin section
+        function showAdminSection() {
+            document.getElementById('adminSection').classList.remove('hidden');
+            renderEmployeesList();
+            renderAllLogs();
+            updateFilterDropdown();
+        }
+
+        // Calculate duration
+        function calculateDuration(start, end) {
+            const diff = end - start;
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            }
+            return `${minutes}m`;
+        }
+
+        // Update current status
+        function updateCurrentStatus() {
+            const statusEl = document.getElementById('currentStatus');
+            if (currentClockIn && currentClockIn.employeeId === currentUser.id) {
+                const clockInTime = new Date(currentClockIn.time);
+                const duration = calculateDuration(clockInTime, new Date());
+                statusEl.innerHTML = `
+                    🟢 You are currently clocked in<br>
+                    <span style="font-size: 0.9rem;">Since ${clockInTime.toLocaleTimeString()} (${duration})</span>
+                `;
+                statusEl.style.display = 'block';
+            } else {
+                statusEl.style.display = 'none';
+            }
+        }
+
+        // Clock in
+        async function clockIn() {
+            if (currentClockIn && currentClockIn.employeeId === currentUser.id) {
+                showMessage('employeeMessage', 'You are already clocked in!', 'error');
+                return;
+            }
+
+            showMessage('employeeMessage', 'Getting location data...', 'info');
+            const locationData = await getLocationData();
+
+            const now = new Date();
+            currentClockIn = {
+                employeeId: currentUser.id,
+                time: now.toISOString()
+            };
+
+            clockRecords.push({
+                id: Date.now(),
+                employeeId: currentUser.id,
+                employeeName: currentUser.name,
+                action: 'Clock In',
+                time: now.toISOString(),
+                workType: currentUser.workType,
+                ip: locationData.ip,
+                location: `${locationData.city}, ${locationData.region}, ${locationData.country}`,
+                duration: null
+            });
+
+            saveData();
+            updateCurrentStatus();
+            renderMyRecords();
+            showMessage('employeeMessage', 'Clocked in successfully!', 'success');
+        }
+
+        // Clock out
+        async function clockOut() {
+            if (!currentClockIn || currentClockIn.employeeId !== currentUser.id) {
+                showMessage('employeeMessage', 'You need to clock in first!', 'error');
+                return;
+            }
+
+            showMessage('employeeMessage', 'Getting location data...', 'info');
+            const locationData = await getLocationData();
+
+            const now = new Date();
+            const clockInTime = new Date(currentClockIn.time);
+            const duration = calculateDuration(clockInTime, now);
+
+            clockRecords.push({
+                id: Date.now(),
+                employeeId: currentUser.id,
+                employeeName: currentUser.name,
+                action: 'Clock Out',
+                time: now.toISOString(),
+                workType: currentUser.workType,
+                ip: locationData.ip,
+                location: `${locationData.city}, ${locationData.region}, ${locationData.country}`,
+                duration: duration
+            });
+
+            currentClockIn = null;
+            saveData();
+            updateCurrentStatus();
+            renderMyRecords();
+            showMessage('employeeMessage', `Clocked out successfully! Duration: ${duration}`, 'success');
+        }
+
+        // Render my records
+        function renderMyRecords() {
+            const tbody = document.getElementById('myRecordsBody');
+            const myRecords = clockRecords.filter(r => r.employeeId === currentUser.id);
+
+            if (myRecords.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="no-records">No records yet today</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = myRecords.map(record => {
+                const time = new Date(record.time);
+                const timeStr = time.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
+
+                return `
+                    <tr>
+                        <td>
+                            <span class="badge ${record.action === 'Clock In' ? 'badge-in' : 'badge-out'}">
+                                ${record.action}
+                            </span>
+                        </td>
+                        <td>${timeStr}</td>
+                        <td>
+                            <div>${record.location}</div>
+                            <div class="location-info">IP: ${record.ip}</div>
+                        </td>
+                        <td>${record.duration || '-'}</td>
+                    </tr>
+                `;
+            }).reverse().join('');
+        }
+
+        // Add employee
+        function addEmployee() {
+            const name = document.getElementById('newEmployeeName').value.trim();
+            const username = document.getElementById('newEmployeeUsername').value.trim();
+            const password = document.getElementById('newEmployeePassword').value;
+            const manager = document.getElementById('newEmployeeManager').value.trim();
+            const workType = document.getElementById('newEmployeeWorkType').value;
+
+            if (!name || !username || !password) {
+                showMessage('adminMessage', 'Please fill in all required fields', 'error');
+                return;
+            }
+
+            if (employees.find(e => e.username === username)) {
+                showMessage('adminMessage', 'Username already exists', 'error');
+                return;
+            }
+
+            employees.push({
+                id: Date.now(),
+                name,
+                username,
+                password,
+                role: 'employee',
+                manager: manager || 'N/A',
+                workType
+            });
+
+            saveData();
+            renderEmployeesList();
+            updateFilterDropdown();
+            
+            document.getElementById('newEmployeeName').value = '';
+            document.getElementById('newEmployeeUsername').value = '';
+            document.getElementById('newEmployeePassword').value = '';
+            document.getElementById('newEmployeeManager').value = '';
+            
+            showMessage('adminMessage', 'Employee added successfully!', 'success');
+        }
+
+        // Render employees list
+        function renderEmployeesList() {
+            const container = document.getElementById('employeesList');
+            const employeeList = employees.filter(e => e.role === 'employee');
+
+            if (employeeList.length === 0) {
+                container.innerHTML = '<p class="no-records">No employees yet</p>';
+                return;
+            }
+
+            container.innerHTML = employeeList.map(emp => `
+                <div class="employee-card">
+                    <h3>${emp.name}</h3>
+                    <div class="employee-info">
+                        <div><strong>Username:</strong> ${emp.username}</div>
+                        <div><strong>Manager:</strong> ${emp.manager}</div>
+                        <div><strong>Work Type:</strong> <span class="badge badge-${emp.workType}">${emp.workType.toUpperCase()}</span></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update filter dropdown
+        function updateFilterDropdown() {
+            const select = document.getElementById('filterEmployee');
+            const current
