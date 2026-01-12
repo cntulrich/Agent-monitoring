@@ -274,8 +274,7 @@
         <button class="logout-btn hidden" onclick="logout()">Logout</button>
 
         <div class="header">
-            <h1>⏰ Employee Clock-In System</h1>
-            <p>Track your work hours accurately</p>
+            <h1>⏰ Employee Tracking</h1>
         </div>
 
         <div class="clock-display" id="clock">Loading...</div>
@@ -346,19 +345,20 @@
                 <h3>Add New Employee</h3>
                 <div class="form-group">
                     <label>Full Name</label>
-                    <input type="text" id="newName">
+                    <input type="text" id="newName" placeholder="First Last" oninput="generateUsername()">
+                    <small style="color: #6c757d;">Username will be auto-generated (e.g., John Doe → jdoe)</small>
                 </div>
                 <div class="form-group">
-                    <label>Username</label>
-                    <input type="text" id="newUsername">
+                    <label>Username (Auto-generated)</label>
+                    <input type="text" id="newUsername" readonly style="background: #f8f9fa;">
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password" id="newPassword">
+                    <input type="password" id="newPassword" placeholder="Initial password">
                 </div>
                 <div class="form-group">
                     <label>Manager</label>
-                    <input type="text" id="newManager">
+                    <input type="text" id="newManager" placeholder="Manager name">
                 </div>
                 <div class="form-group">
                     <label>Work Type</label>
@@ -370,13 +370,29 @@
                 </div>
                 <button class="btn btn-primary" onclick="addEmployee()">Add Employee</button>
 
+                <h3 style="margin-top: 30px;">Import Employees from PDF</h3>
+                <div class="form-group">
+                    <input type="file" id="pdfFile" accept=".pdf" style="display: none;" onchange="handlePdfUpload()">
+                    <label for="pdfFile" style="display: block; padding: 20px; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; text-align: center; cursor: pointer;">
+                        📄 Click to upload employee PDF<br>
+                        <small style="color: #6c757d;">PDF should contain: Name, Password, Manager, Work Type</small>
+                    </label>
+                </div>
+                <div id="importStatus" class="message"></div>
+
                 <h3 style="margin-top: 30px;">All Employees</h3>
                 <div id="employeeList"></div>
             </div>
 
             <!-- Logs Tab -->
             <div class="tab-content" id="logsTab">
-                <h3>All Clock-In/Out Logs</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>All Clock-In/Out Logs</h3>
+                    <div>
+                        <button class="btn btn-success" onclick="exportToCSV()" style="width: auto; margin-right: 10px;">📥 Export to CSV</button>
+                        <button class="btn" onclick="exportToPDF()" style="width: auto; background: #dc3545; color: white;">📄 Export to PDF</button>
+                    </div>
+                </div>
                 <table>
                     <thead>
                         <tr>
@@ -397,7 +413,15 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script>
+        // Configure PDF.js
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
         // Data
         let users = [
             {id: 1, name: 'Admin User', username: 'admin', password: 'admin123', role: 'admin', manager: 'N/A', workType: 'office'},
@@ -613,6 +637,35 @@
             renderAllLogs();
         }
 
+        // Generate username from full name
+        function generateUsername() {
+            const fullName = document.getElementById('newName').value.trim();
+            if (!fullName) {
+                document.getElementById('newUsername').value = '';
+                return;
+            }
+
+            const parts = fullName.toLowerCase().split(' ').filter(p => p);
+            if (parts.length < 2) {
+                document.getElementById('newUsername').value = parts[0] || '';
+                return;
+            }
+
+            const firstName = parts[0];
+            const lastName = parts[parts.length - 1];
+            const baseUsername = firstName.charAt(0) + lastName;
+            
+            // Check if username exists, add number if needed
+            let username = baseUsername;
+            let counter = 1;
+            while (users.find(u => u.username === username)) {
+                username = baseUsername + counter;
+                counter++;
+            }
+            
+            document.getElementById('newUsername').value = username;
+        }
+
         // Add employee
         function addEmployee() {
             const name = document.getElementById('newName').value.trim();
@@ -650,6 +703,204 @@
             document.getElementById('newManager').value = '';
             
             showMsg('adminMsg', 'Employee added successfully!', 'success');
+        }
+
+        // Handle PDF upload for employee import
+        async function handlePdfUpload() {
+            const fileInput = document.getElementById('pdfFile');
+            const file = fileInput.files[0];
+            
+            if (!file) return;
+
+            showMsg('importStatus', 'Processing PDF...', 'info');
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + '\n';
+                }
+
+                const importedEmployees = parsePDFEmployees(fullText);
+                
+                if (importedEmployees.length === 0) {
+                    showMsg('importStatus', 'No employee data found. PDF should contain: Name, Password, Manager, Work Type', 'error');
+                    return;
+                }
+
+                let added = 0;
+                let skipped = 0;
+                
+                importedEmployees.forEach(emp => {
+                    if (!users.find(u => u.username === emp.username)) {
+                        users.push({
+                            id: Date.now() + Math.random(),
+                            name: emp.name,
+                            username: emp.username,
+                            password: emp.password,
+                            role: 'employee',
+                            manager: emp.manager || 'N/A',
+                            workType: emp.workType || 'office'
+                        });
+                        added++;
+                    } else {
+                        skipped++;
+                    }
+                });
+
+                saveData();
+                renderEmployees();
+                showMsg('importStatus', `Imported ${added} employee(s). ${skipped} duplicate(s) skipped.`, 'success');
+                fileInput.value = '';
+                
+            } catch (error) {
+                console.error('PDF error:', error);
+                showMsg('importStatus', 'Error processing PDF: ' + error.message, 'error');
+            }
+        }
+
+        // Parse PDF text for employee data
+        function parsePDFEmployees(text) {
+            const employees = [];
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+            
+            let currentEmp = {};
+            
+            for (let line of lines) {
+                const namMatch = line.match(/(?:name|employee)[\s:]+([a-z\s]+)/i);
+                if (namMatch) {
+                    if (currentEmp.name && currentEmp.password) {
+                        // Generate username
+                        const parts = currentEmp.name.toLowerCase().split(' ').filter(p => p);
+                        if (parts.length >= 2) {
+                            currentEmp.username = parts[0].charAt(0) + parts[parts.length - 1];
+                        } else {
+                            currentEmp.username = parts[0];
+                        }
+                        employees.push(currentEmp);
+                    }
+                    currentEmp = { name: namMatch[1].trim() };
+                    continue;
+                }
+                
+                const passMatch = line.match(/(?:password|pass)[\s:]+([a-z0-9!@#$%]+)/i);
+                if (passMatch) {
+                    currentEmp.password = passMatch[1].trim();
+                    continue;
+                }
+                
+                const mgrMatch = line.match(/(?:manager|supervisor)[\s:]+([a-z\s]+)/i);
+                if (mgrMatch) {
+                    currentEmp.manager = mgrMatch[1].trim();
+                    continue;
+                }
+                
+                const typeMatch = line.match(/(?:work type|location|type)[\s:]+(\w+)/i);
+                if (typeMatch) {
+                    const type = typeMatch[1].toLowerCase();
+                    if (['office', 'wfh', 'hybrid'].includes(type)) {
+                        currentEmp.workType = type;
+                    }
+                    continue;
+                }
+            }
+            
+            if (currentEmp.name && currentEmp.password) {
+                const parts = currentEmp.name.toLowerCase().split(' ').filter(p => p);
+                if (parts.length >= 2) {
+                    currentEmp.username = parts[0].charAt(0) + parts[parts.length - 1];
+                } else {
+                    currentEmp.username = parts[0];
+                }
+                employees.push(currentEmp);
+            }
+            
+            return employees;
+        }
+
+        // Export logs to CSV
+        function exportToCSV() {
+            if (logs.length === 0) {
+                showMsg('adminMsg', 'No logs to export', 'error');
+                return;
+            }
+
+            const headers = ['Employee', 'Action', 'Date', 'Time', 'Work Type', 'IP Address', 'Location', 'Duration'];
+            const rows = logs.map(log => {
+                const dt = new Date(log.time);
+                return [
+                    log.userName,
+                    log.action,
+                    dt.toLocaleDateString(),
+                    dt.toLocaleTimeString(),
+                    log.workType.toUpperCase(),
+                    log.ip,
+                    log.location,
+                    log.duration || '-'
+                ];
+            });
+
+            let csvContent = headers.join(',') + '\n';
+            rows.forEach(row => {
+                csvContent += row.map(cell => `"${cell}"`).join(',') + '\n';
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'audit-logs-' + new Date().toISOString().split('T')[0] + '.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            showMsg('adminMsg', 'Logs exported to CSV successfully!', 'success');
+        }
+
+        // Export logs to PDF
+        function exportToPDF() {
+            if (logs.length === 0) {
+                showMsg('adminMsg', 'No logs to export', 'error');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(18);
+            doc.text('Employee Clock-In/Out Audit Logs', 14, 20);
+            
+            doc.setFontSize(10);
+            doc.text('Generated: ' + new Date().toLocaleString(), 14, 28);
+
+            const tableData = logs.map(log => {
+                const dt = new Date(log.time);
+                return [
+                    log.userName,
+                    log.action,
+                    dt.toLocaleDateString(),
+                    dt.toLocaleTimeString(),
+                    log.workType.toUpperCase(),
+                    log.ip,
+                    log.location,
+                    log.duration || '-'
+                ];
+            });
+
+            doc.autoTable({
+                head: [['Employee', 'Action', 'Date', 'Time', 'Work Type', 'IP', 'Location', 'Duration']],
+                body: tableData,
+                startY: 35,
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [102, 126, 234] }
+            });
+
+            doc.save('audit-logs-' + new Date().toISOString().split('T')[0] + '.pdf');
+            showMsg('adminMsg', 'Logs exported to PDF successfully!', 'success');
         }
 
         // Render employees
