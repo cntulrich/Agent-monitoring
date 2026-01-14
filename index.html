@@ -296,7 +296,6 @@
 
         <div class="clock-display" id="clock">Loading...</div>
 
-        <!-- Login Page -->
         <div class="card" id="loginPage">
             <h2 style="text-align: center; margin-bottom: 30px;">Login</h2>
             <div id="loginMsg" class="message"></div>
@@ -319,7 +318,6 @@
             </p>
         </div>
 
-        <!-- Employee Page -->
         <div class="card hidden" id="employeePage">
             <div id="empMsg" class="message"></div>
             <div id="empStatus" class="status-box hidden"></div>
@@ -348,7 +346,6 @@
             </table>
         </div>
 
-        <!-- Admin Page -->
         <div class="card hidden" id="adminPage">
             <div id="adminMsg" class="message"></div>
             
@@ -357,7 +354,6 @@
                 <button class="tab" onclick="switchTab('logs')">Audit Logs</button>
             </div>
 
-            <!-- Manage Tab -->
             <div class="tab-content active" id="manageTab">
                 <h3>Add New Employee</h3>
                 <div class="form-group">
@@ -392,12 +388,12 @@
                 </div>
                 <button class="btn btn-primary" onclick="addEmployee()">Add Employee</button>
 
-                <h3 style="margin-top: 30px;">Import Employees from PDF</h3>
+                <h3 style="margin-top: 30px;">Import Employees from CSV</h3>
                 <div class="form-group">
-                    <input type="file" id="pdfFile" accept=".pdf" style="display: none;" onchange="handlePdfUpload()">
-                    <label for="pdfFile" style="display: block; padding: 20px; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; text-align: center; cursor: pointer;">
-                        📄 Click to upload employee PDF<br>
-                        <small style="color: #6c757d;">PDF should contain: Name, Password, Manager, Work Type</small>
+                    <input type="file" id="csvFile" accept=".csv" style="display: none;" onchange="handleCSVUpload()">
+                    <label for="csvFile" style="display: block; padding: 20px; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; text-align: center; cursor: pointer;">
+                        📊 Click to upload employee CSV<br>
+                        <small style="color: #6c757d;">Export your Google Sheet as CSV (File → Download → CSV)</small>
                     </label>
                 </div>
                 <div id="importStatus" class="message"></div>
@@ -406,7 +402,6 @@
                 <div id="employeeList"></div>
             </div>
 
-            <!-- Logs Tab -->
             <div class="tab-content" id="logsTab">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h3>All Clock-In/Out Logs</h3>
@@ -436,16 +431,9 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script>
-        // Configure PDF.js
-        if (typeof pdfjsLib !== 'undefined') {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        }
-
-        // Data
         let users = [
             {id: 1, name: 'Admin User', username: 'admin', password: 'admin123', role: 'admin', manager: 'N/A', workType: 'office', company: 'N/A'},
             {id: 2, name: 'John Doe', username: 'john', password: 'pass123', role: 'employee', manager: 'Admin User', workType: 'hybrid', company: 'ABC Corp'}
@@ -455,7 +443,6 @@
         let currentUser = null;
         let activeClockIn = null;
 
-        // Load data
         function loadData() {
             const savedUsers = localStorage.getItem('users');
             const savedLogs = localStorage.getItem('logs');
@@ -466,7 +453,6 @@
             if (savedClockIn) activeClockIn = JSON.parse(savedClockIn);
         }
 
-        // Save data
         function saveData() {
             localStorage.setItem('users', JSON.stringify(users));
             localStorage.setItem('logs', JSON.stringify(logs));
@@ -477,7 +463,6 @@
             }
         }
 
-        // Show message
         function showMsg(id, text, type) {
             const el = document.getElementById(id);
             el.textContent = text;
@@ -485,7 +470,6 @@
             setTimeout(() => el.classList.remove('show'), 5000);
         }
 
-        // Update clock
         function updateClock() {
             const now = new Date();
             const time = now.toLocaleTimeString();
@@ -493,11 +477,9 @@
             document.getElementById('clock').innerHTML = time + '<br><div style="font-size: 1rem; margin-top: 10px;">' + date + '</div>';
         }
 
-        // Login
         function login() {
             const u = document.getElementById('username').value.trim();
             const p = document.getElementById('password').value;
-
             const user = users.find(x => x.username === u && x.password === p);
             
             if (!user) {
@@ -516,7 +498,6 @@
             }
         }
 
-        // Logout
         function logout() {
             currentUser = null;
             document.getElementById('loginPage').classList.remove('hidden');
@@ -527,20 +508,14 @@
             document.getElementById('password').value = '';
         }
 
-        // Show employee page
         function showEmployeePage() {
             document.getElementById('employeePage').classList.remove('hidden');
             document.getElementById('empName').textContent = currentUser.name;
-            document.getElementById('empInfo').innerHTML = 
-                '<strong>Manager:</strong> ' + currentUser.manager + ' | ' +
-                '<strong>Work Type:</strong> <span class="badge badge-' + currentUser.workType + '">' + 
-                currentUser.workType.toUpperCase() + '</span>';
-            
+            document.getElementById('empInfo').innerHTML = '<strong>Manager:</strong> ' + currentUser.manager + ' | <strong>Work Type:</strong> <span class="badge badge-' + currentUser.workType + '">' + currentUser.workType.toUpperCase() + '</span>';
             updateStatus();
             renderMyRecords();
         }
 
-        // Update status
         function updateStatus() {
             const statusEl = document.getElementById('empStatus');
             if (activeClockIn && activeClockIn.userId === currentUser.id) {
@@ -553,93 +528,53 @@
             }
         }
 
-        // Get location and geolocation
         async function getLocation() {
             try {
                 const res = await fetch('https://ipapi.co/json/');
                 const data = await res.json();
-                
-                // Get geolocation coordinates
                 let geoCoords = 'Not available';
                 try {
                     const position = await new Promise((resolve, reject) => {
                         navigator.geolocation.getCurrentPosition(resolve, reject);
                     });
-                    geoCoords = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+                    geoCoords = position.coords.latitude.toFixed(6) + ', ' + position.coords.longitude.toFixed(6);
                 } catch (e) {
                     console.log('Geolocation not available');
                 }
-                
-                return {
-                    ip: data.ip,
-                    location: data.city + ', ' + data.region + ', ' + data.country_name,
-                    geolocation: geoCoords
-                };
+                return {ip: data.ip, location: data.city + ', ' + data.region + ', ' + data.country_name, geolocation: geoCoords};
             } catch (e) {
                 return {ip: 'Unknown', location: 'Unknown', geolocation: 'Not available'};
             }
         }
 
-        // Clock in
         async function clockIn() {
             if (activeClockIn && activeClockIn.userId === currentUser.id) {
                 showMsg('empMsg', 'Already clocked in!', 'error');
                 return;
             }
-
             showMsg('empMsg', 'Getting location...', 'info');
             const loc = await getLocation();
-
             const now = new Date();
             activeClockIn = {userId: currentUser.id, time: now.toISOString()};
-
-            logs.push({
-                id: Date.now(),
-                userId: currentUser.id,
-                userName: currentUser.name,
-                action: 'Clock In',
-                time: now.toISOString(),
-                workType: currentUser.workType,
-                ip: loc.ip,
-                location: loc.location,
-                geolocation: loc.geolocation,
-                duration: null
-            });
-
+            logs.push({id: Date.now(), userId: currentUser.id, userName: currentUser.name, action: 'Clock In', time: now.toISOString(), workType: currentUser.workType, ip: loc.ip, location: loc.location, geolocation: loc.geolocation, duration: null});
             saveData();
             updateStatus();
             renderMyRecords();
             showMsg('empMsg', 'Clocked in successfully!', 'success');
         }
 
-        // Clock out
         async function clockOut() {
             if (!activeClockIn || activeClockIn.userId !== currentUser.id) {
                 showMsg('empMsg', 'Need to clock in first!', 'error');
                 return;
             }
-
             showMsg('empMsg', 'Getting location...', 'info');
             const loc = await getLocation();
-
             const now = new Date();
             const start = new Date(activeClockIn.time);
             const minutes = Math.floor((now - start) / 60000);
             const duration = Math.floor(minutes / 60) + 'h ' + (minutes % 60) + 'm';
-
-            logs.push({
-                id: Date.now(),
-                userId: currentUser.id,
-                userName: currentUser.name,
-                action: 'Clock Out',
-                time: now.toISOString(),
-                workType: currentUser.workType,
-                ip: loc.ip,
-                location: loc.location,
-                geolocation: loc.geolocation,
-                duration: duration
-            });
-
+            logs.push({id: Date.now(), userId: currentUser.id, userName: currentUser.name, action: 'Clock Out', time: now.toISOString(), workType: currentUser.workType, ip: loc.ip, location: loc.location, geolocation: loc.geolocation, duration: duration});
             activeClockIn = null;
             saveData();
             updateStatus();
@@ -647,64 +582,48 @@
             showMsg('empMsg', 'Clocked out! Duration: ' + duration, 'success');
         }
 
-        // Render my records
         function renderMyRecords() {
             const tbody = document.getElementById('empRecords');
             const myLogs = logs.filter(l => l.userId === currentUser.id);
-
             if (myLogs.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 30px; color: #6c757d;">No records yet</td></tr>';
                 return;
             }
-
-            tbody.innerHTML = myLogs.reverse().map(l => {
+            tbody.innerHTML = myLogs.slice().reverse().map(l => {
                 const time = new Date(l.time).toLocaleTimeString();
-                return `<tr>
-                    <td><span class="badge badge-${l.action === 'Clock In' ? 'in' : 'out'}">${l.action}</span></td>
-                    <td>${time}</td>
-                    <td>${l.location}<br><small style="color: #6c757d;">IP: ${l.ip}</small></td>
-                    <td>${l.duration || '-'}</td>
-                </tr>`;
+                return '<tr><td><span class="badge badge-' + (l.action === 'Clock In' ? 'in' : 'out') + '">' + l.action + '</span></td><td>' + time + '</td><td>' + l.location + '<br><small style="color: #6c757d;">IP: ' + l.ip + '</small></td><td>' + (l.duration || '-') + '</td></tr>';
             }).join('');
         }
 
-        // Show admin page
         function showAdminPage() {
             document.getElementById('adminPage').classList.remove('hidden');
             renderEmployees();
             renderAllLogs();
         }
 
-        // Generate username from full name
         function generateUsername() {
             const fullName = document.getElementById('newName').value.trim();
             if (!fullName) {
                 document.getElementById('newUsername').value = '';
                 return;
             }
-
             const parts = fullName.toLowerCase().split(' ').filter(p => p);
             if (parts.length < 2) {
                 document.getElementById('newUsername').value = parts[0] || '';
                 return;
             }
-
             const firstName = parts[0];
             const lastName = parts[parts.length - 1];
             const baseUsername = firstName.charAt(0) + lastName;
-            
-            // Check if username exists, add number if needed
             let username = baseUsername;
             let counter = 1;
             while (users.find(u => u.username === username)) {
                 username = baseUsername + counter;
                 counter++;
             }
-            
             document.getElementById('newUsername').value = username;
         }
 
-        // Add employee
         function addEmployee() {
             const name = document.getElementById('newName').value.trim();
             const username = document.getElementById('newUsername').value.trim();
@@ -712,40 +631,24 @@
             const company = document.getElementById('newCompany').value.trim();
             const manager = document.getElementById('newManager').value.trim();
             const workType = document.getElementById('newWorkType').value;
-
             if (!name || !username || !company) {
                 showMsg('adminMsg', 'Please fill all required fields (Name, Username, Company)', 'error');
                 return;
             }
-
             if (users.find(u => u.username === username)) {
                 showMsg('adminMsg', 'Username already exists', 'error');
                 return;
             }
-
-            users.push({
-                id: Date.now(),
-                name,
-                username,
-                password,
-                role: 'employee',
-                company,
-                manager: manager || 'N/A',
-                workType
-            });
-
+            users.push({id: Date.now(), name: name, username: username, password: password, role: 'employee', company: company, manager: manager || 'N/A', workType: workType});
             saveData();
             renderEmployees();
-            
             document.getElementById('newName').value = '';
             document.getElementById('newUsername').value = '';
             document.getElementById('newCompany').value = '';
             document.getElementById('newManager').value = '';
-            
             showMsg('adminMsg', 'Employee added successfully!', 'success');
         }
 
-        // Remove employee
         function removeEmployee(userId) {
             if (confirm('Are you sure you want to remove this employee?')) {
                 users = users.filter(u => u.id !== userId);
@@ -755,153 +658,70 @@
             }
         }
 
-        // Handle PDF upload for employee import
-        async function handlePdfUpload() {
-            const fileInput = document.getElementById('pdfFile');
+        async function handleCSVUpload() {
+            const fileInput = document.getElementById('csvFile');
             const file = fileInput.files[0];
-            
             if (!file) return;
-
-            showMsg('importStatus', 'Processing PDF...', 'info');
-
+            showMsg('importStatus', 'Processing CSV...', 'info');
             try {
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                
-                let fullText = '';
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    const pageText = textContent.items.map(item => item.str).join(' ');
-                    fullText += pageText + '\n';
-                }
-
-                const importedEmployees = parsePDFEmployees(fullText);
-                
-                if (importedEmployees.length === 0) {
-                    showMsg('importStatus', 'No employee data found. PDF should contain: Name, Password, Manager, Work Type', 'error');
+                const text = await file.text();
+                const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                if (lines.length < 2) {
+                    showMsg('importStatus', 'CSV file is empty or invalid', 'error');
                     return;
                 }
-
+                const dataLines = lines.slice(1).filter(line => !line.toLowerCase().includes('total'));
                 let added = 0;
-                let skipped = 0;
-                
-                importedEmployees.forEach(emp => {
-                    if (!users.find(u => u.username === emp.username)) {
-                        users.push({
-                            id: Date.now() + Math.random(),
-                            name: emp.name,
-                            username: emp.username,
-                            password: emp.password,
-                            role: 'employee',
-                            company: emp.company || 'N/A',
-                            manager: emp.manager || 'N/A',
-                            workType: emp.workType || 'office'
-                        });
-                        added++;
-                    } else {
-                        skipped++;
+                dataLines.forEach(line => {
+                    const columns = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+                    if (!columns || columns.length < 4) return;
+                    const manager = columns[0].replace(/"/g, '').trim();
+                    const company = columns[1].replace(/"/g, '').trim();
+                    const name = columns[2].replace(/"/g, '').trim();
+                    const location = columns[3].replace(/"/g, '').trim().toUpperCase();
+                    if (!name || name.length < 2) return;
+                    const parts = name.toLowerCase().split(' ').filter(p => p);
+                    if (parts.length < 2) return;
+                    const firstName = parts[0];
+                    const lastName = parts[parts.length - 1];
+                    let username = firstName.charAt(0) + lastName;
+                    let counter = 1;
+                    const baseUsername = username;
+                    while (users.find(u => u.username === username)) {
+                        username = baseUsername + counter;
+                        counter++;
                     }
+                    let workType = 'office';
+                    if (location === 'WFH') workType = 'wfh';
+                    else if (location === 'HYBRID') workType = 'hybrid';
+                    else if (location === 'OFFICE') workType = 'office';
+                    users.push({id: Date.now() + Math.random(), name: name, username: username, password: 'Naked26$', role: 'employee', company: company || 'N/A', manager: manager || 'N/A', workType: workType});
+                    added++;
                 });
-
                 saveData();
                 renderEmployees();
-                showMsg('importStatus', `Imported ${added} employee(s). ${skipped} duplicate(s) skipped.`, 'success');
+                showMsg('importStatus', 'Successfully imported ' + added + ' employee(s)!', 'success');
                 fileInput.value = '';
-                
             } catch (error) {
-                console.error('PDF error:', error);
-                showMsg('importStatus', 'Error processing PDF: ' + error.message, 'error');
+                console.error('CSV error:', error);
+                showMsg('importStatus', 'Error processing CSV: ' + error.message, 'error');
             }
         }
 
-        // Parse PDF text for employee data
-        function parsePDFEmployees(text) {
-            const employees = [];
-            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
-            
-            let currentEmp = {};
-            
-            for (let line of lines) {
-                const namMatch = line.match(/(?:name|employee)[\s:]+([a-z\s]+)/i);
-                if (namMatch) {
-                    if (currentEmp.name && currentEmp.password) {
-                        // Generate username
-                        const parts = currentEmp.name.toLowerCase().split(' ').filter(p => p);
-                        if (parts.length >= 2) {
-                            currentEmp.username = parts[0].charAt(0) + parts[parts.length - 1];
-                        } else {
-                            currentEmp.username = parts[0];
-                        }
-                        employees.push(currentEmp);
-                    }
-                    currentEmp = { name: namMatch[1].trim() };
-                    continue;
-                }
-                
-                const passMatch = line.match(/(?:password|pass)[\s:]+([a-z0-9!@#$%]+)/i);
-                if (passMatch) {
-                    currentEmp.password = passMatch[1].trim();
-                    continue;
-                }
-                
-                const mgrMatch = line.match(/(?:manager|supervisor)[\s:]+([a-z\s]+)/i);
-                if (mgrMatch) {
-                    currentEmp.manager = mgrMatch[1].trim();
-                    continue;
-                }
-                
-                const typeMatch = line.match(/(?:work type|location|type)[\s:]+(\w+)/i);
-                if (typeMatch) {
-                    const type = typeMatch[1].toLowerCase();
-                    if (['office', 'wfh', 'hybrid'].includes(type)) {
-                        currentEmp.workType = type;
-                    }
-                    continue;
-                }
-            }
-            
-            if (currentEmp.name && currentEmp.password) {
-                const parts = currentEmp.name.toLowerCase().split(' ').filter(p => p);
-                if (parts.length >= 2) {
-                    currentEmp.username = parts[0].charAt(0) + parts[parts.length - 1];
-                } else {
-                    currentEmp.username = parts[0];
-                }
-                employees.push(currentEmp);
-            }
-            
-            return employees;
-        }
-
-        // Export logs to CSV
         function exportToCSV() {
             if (logs.length === 0) {
                 showMsg('adminMsg', 'No logs to export', 'error');
                 return;
             }
-
             const headers = ['Employee', 'Action', 'Date', 'Time', 'Work Type', 'IP Address', 'Location', 'Geolocation', 'Duration'];
             const rows = logs.map(log => {
                 const dt = new Date(log.time);
-                return [
-                    log.userName,
-                    log.action,
-                    dt.toLocaleDateString(),
-                    dt.toLocaleTimeString(),
-                    log.workType.toUpperCase(),
-                    log.ip,
-                    log.location,
-                    log.geolocation || 'Not available',
-                    log.duration || '-'
-                ];
+                return [log.userName, log.action, dt.toLocaleDateString(), dt.toLocaleTimeString(), log.workType.toUpperCase(), log.ip, log.location, log.geolocation || 'Not available', log.duration || '-'];
             });
-
             let csvContent = headers.join(',') + '\n';
             rows.forEach(row => {
-                csvContent += row.map(cell => `"${cell}"`).join(',') + '\n';
+                csvContent += row.map(cell => '"' + cell + '"').join(',') + '\n';
             });
-
             const blob = new Blob([csvContent], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -909,118 +729,64 @@
             a.download = 'audit-logs-' + new Date().toISOString().split('T')[0] + '.csv';
             a.click();
             window.URL.revokeObjectURL(url);
-
             showMsg('adminMsg', 'Logs exported to CSV successfully!', 'success');
         }
 
-        // Export logs to PDF
         function exportToPDF() {
             if (logs.length === 0) {
                 showMsg('adminMsg', 'No logs to export', 'error');
                 return;
             }
-
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-
             doc.setFontSize(18);
             doc.text('Employee Clock-In/Out Audit Logs', 14, 20);
-            
             doc.setFontSize(10);
             doc.text('Generated: ' + new Date().toLocaleString(), 14, 28);
-
             const tableData = logs.map(log => {
                 const dt = new Date(log.time);
-                return [
-                    log.userName,
-                    log.action,
-                    dt.toLocaleDateString(),
-                    dt.toLocaleTimeString(),
-                    log.workType.toUpperCase(),
-                    log.ip,
-                    log.location,
-                    log.geolocation || 'N/A',
-                    log.duration || '-'
-                ];
+                return [log.userName, log.action, dt.toLocaleDateString(), dt.toLocaleTimeString(), log.workType.toUpperCase(), log.ip, log.location, log.geolocation || 'N/A', log.duration || '-'];
             });
-
-            doc.autoTable({
-                head: [['Employee', 'Action', 'Date', 'Time', 'Work Type', 'IP', 'Location', 'Geo', 'Duration']],
-                body: tableData,
-                startY: 35,
-                styles: { fontSize: 7 },
-                headStyles: { fillColor: [102, 126, 234] }
-            });
-
+            doc.autoTable({head: [['Employee', 'Action', 'Date', 'Time', 'Work Type', 'IP', 'Location', 'Geo', 'Duration']], body: tableData, startY: 35, styles: { fontSize: 7 }, headStyles: { fillColor: [102, 126, 234] }});
             doc.save('audit-logs-' + new Date().toISOString().split('T')[0] + '.pdf');
             showMsg('adminMsg', 'Logs exported to PDF successfully!', 'success');
         }
 
-        // Render employees
         function renderEmployees() {
             const container = document.getElementById('employeeList');
             const emps = users.filter(u => u.role === 'employee');
-
             if (emps.length === 0) {
                 container.innerHTML = '<p style="text-align: center; padding: 20px; color: #6c757d;">No employees yet</p>';
                 return;
             }
-
-            container.innerHTML = emps.map(e => `
-                <div class="employee-card">
-                    <div>
-                        <strong>${e.name}</strong><br>
-                        <small style="color: #6c757d;">
-                            Username: ${e.username} | Company: ${e.company || 'N/A'} | Manager: ${e.manager} | 
-                            <span class="badge badge-${e.workType}">${e.workType.toUpperCase()}</span>
-                        </small>
-                    </div>
-                    <button class="btn-remove" onclick="removeEmployee(${e.id})">Remove</button>
-                </div>
-            `).join('');
+            container.innerHTML = emps.map(e => '<div class="employee-card"><div><strong>' + e.name + '</strong><br><small style="color: #6c757d;">Username: ' + e.username + ' | Company: ' + (e.company || 'N/A') + ' | Manager: ' + e.manager + ' | <span class="badge badge-' + e.workType + '">' + e.workType.toUpperCase() + '</span></small></div><button class="btn-remove" onclick="removeEmployee(' + e.id + ')">Remove</button></div>').join('');
         }
 
-        // Render all logs
         function renderAllLogs() {
             const tbody = document.getElementById('allLogs');
-
             if (logs.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: #6c757d;">No logs yet</td></tr>';
                 return;
             }
-
             tbody.innerHTML = logs.slice().reverse().map(l => {
                 const time = new Date(l.time).toLocaleString();
-                return `<tr>
-                    <td><strong>${l.userName}</strong></td>
-                    <td><span class="badge badge-${l.action === 'Clock In' ? 'in' : 'out'}">${l.action}</span></td>
-                    <td>${time}</td>
-                    <td><span class="badge badge-${l.workType}">${l.workType.toUpperCase()}</span></td>
-                    <td>${l.ip}</td>
-                    <td>${l.location}</td>
-                    <td>${l.geolocation || 'Not available'}</td>
-                    <td>${l.duration || '-'}</td>
-                </tr>`;
+                return '<tr><td><strong>' + l.userName + '</strong></td><td><span class="badge badge-' + (l.action === 'Clock In' ? 'in' : 'out') + '">' + l.action + '</span></td><td>' + time + '</td><td><span class="badge badge-' + l.workType + '">' + l.workType.toUpperCase() + '</span></td><td>' + l.ip + '</td><td>' + l.location + '</td><td>' + (l.geolocation || 'Not available') + '</td><td>' + (l.duration || '-') + '</td></tr>';
             }).join('');
         }
 
-        // Switch tab
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
             event.target.classList.add('active');
             document.getElementById(tab + 'Tab').classList.add('active');
         }
 
-        // Enter key login
         document.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && !document.getElementById('loginPage').classList.contains('hidden')) {
                 login();
             }
         });
 
-        // Initialize
         loadData();
         updateClock();
         setInterval(updateClock, 1000);
